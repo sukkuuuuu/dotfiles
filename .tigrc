@@ -1,0 +1,163 @@
+# サブビューを横分割にする
+set vertical-split = false
+
+# main viewの左端にコミットIDを表示する
+set main-view = id date author commit-title:graph=yes,refs=yes
+
+# blame view の行数表示をON、intervalを1に
+set blame-view  = date:default author:email-user id:yes,color line-number:yes,interval=1 text
+
+# Pager系の行数表示をON、intervalを1に (default: line-number:no,interval=5)
+set pager-view  = line-number:yes,interval=1 text
+set stage-view  = line-number:yes,interval=1 text
+set log-view    = line-number:yes,interval=1 text
+set blob-view   = line-number:yes,interval=1 text
+set diff-view   = line-number:yes,interval=1 text:yes,commit-title-overflow=no
+
+# 検索時に大文字小文字を無視する (default: false)
+set ignore-case = true
+
+# リフレッシュするタイミング（1秒間隔で定期更新）
+set refresh-mode = auto
+set refresh-interval = 1
+
+# コミットグラフの描画
+set line-graphics = utf-8
+
+# merge commitのdiff詳細を表示する
+set diff-options = -m --first-parent
+
+# Aで特定ファイルのみstashに保存
+bind status  A       ?git stash push -p -m "%(prompt Enter stash comment: )"
+# Aで直前のコミットメッセージを修正する
+bind main    A       ?git commit --amend -m "%(prompt Enter new commit message: )"
+
+# Bでbranch名をpbcopy
+bind generic B      @bash -c "echo -n '%(branch)' | pbcopy"
+
+# Cでstashからdiff-viewを開き特定のファイルをapply
+bind diff    C      ?git checkout %(stash) -- %(file)
+
+# Cでコミットにcheckout
+bind main    C      ?git checkout %(commit)
+
+# cでcommitIDをpbcopy
+bind generic c      @bash -c "echo -n '%(commit)' | pbcopy"
+
+
+# D でブランチを削除 (マージ済みブランチのみ. 強制削除(branch -D) は `!`) (refs-view)
+bind refs    D      ?git branch -d %(branch)
+
+# Ctrl-dでマージ済みのローカルブランチを全て削除
+bind refs <Ctrl-d>  ?zsh -c "git branch --merged | rg -v '(^\*|master|develop|release)' | xargs git branch -d"
+
+
+# F で fetch (default: :toggle file-name / :toggle commit-title-refs)
+bind generic F      ?git fetch %(remote) --prune
+bind main    F      ?git fetch %(remote) --prune
+
+# Ctrl-f で Commit IDからPRをブラウザで開く
+# blameした場合複数のPRが取れることがあるので、head -n 1してる
+bind generic <Ctrl-f> ?zsh -c "gh pr list --search '%(commit)' --state merged | awk -F \" \" '{print $1}' | head -n 1 | xargs gh pr view -w"
+
+# fでファイル名をコピー
+bind diff    f      @bash -c "echo -n '%(file)' | pbcopy"
+bind status  f      @bash -c "echo -n '%(file)' | pbcopy"
+bind tree    f      @bash -c "echo -n '%(file)' | pbcopy"
+
+
+
+
+# Alt-f で :toggle file-name / :toggle commit-title-refs
+bind generic <Esc>f :toggle file-name
+bind main    <Esc>f :toggle commit-title-refs
+
+# hで左に移動(Vim)
+bind generic h      scroll-left
+bind generic ?      view-help
+
+# Kでcherry-pick
+bind main    K      ?git cherry-pick %(commit)
+
+# lで右に移動(Vim)
+bind generic l      scroll-right
+
+
+# M でmerge
+bind main    M      ?git merge --no-ff %(remote)/%(branch)
+bind diff    M      ?git merge --no-ff %(branch)
+bind refs    M      ?git merge --no-ff %(branch)
+
+# Mで自分が作成したPRをブラウザで開く
+bind status  M      ?zsh -c "gh mypr | fzf | awk -F \" \" '{print $1}' | xargs gh pr view --web"
+
+# N でブランチ名を変更
+bind refs    N      ?git branch -m %(branch) "%(prompt Enter new branch name: )"
+
+# N で追加コミット
+bind status  N      ?git commit --amend --no-edit
+
+
+# O で fetch origin branch:branch
+bind refs    O      ?git fetch --prune origin %(branch):%(branch)
+
+# Q で squashでコミットをまとめる
+bind main    Q      ?git rebase -i HEAD~"%(prompt Enter number from HEAD to rebase: )"
+
+# P で remote への push
+bind main    P      ?git push -u %(remote) %(repo:head)
+
+# ブランチを選択しブラウザでPRを作る
+bind main <Ctrl-p>  ?bash -c "git branch -a | fzf | sed 's/remotes\\/origin\\///g' | sed 's/\n//g' | sed 's/ //g' | xargs -I {} gh pr create --base {} --web"
+
+# P で stashから pop
+bind stash   P      ?git stash pop %(stash)
+
+# ctrl-rでrebase
+bind main <Ctrl-r>  ?git rebase %(branch) %(repo:head)
+
+# rでひとつ前のコミットメッセージでコミット
+bind status  r      ?git commit --reuse-message=HEAD
+
+# S で stash save
+bind status  S      ?git stash push -m "%(prompt Enter stash comment: )"
+
+
+# S で switch branch
+bind refs    S      ?git switch %(branch)
+
+# S でswitch -c new-branch
+bind main    S      ?git switch -c "%(prompt Enter new branch name: )"
+bind main <Ctrl-s>  ?git switch %(branch)
+
+# TでコミットIDに対してtagを打つ
+bind main    T      ?git tag "%(prompt Enter tag name: )" %(commit)
+
+# Ctrl-tでtagをpushする
+bind main <Ctrl-t>  ?git push origin %(tag)
+
+# U で pull
+bind generic U      ?git pull %(remote)
+bind refs    U      ?git branch --set-upstream-to  %(remote)/%(branch)
+
+# V で .tigrcを再読み込み
+# :source とすると表示が若干変わる
+bind generic V      :source ~/.tigrc
+
+# V でpre commit hookを無視したコミット
+bind status  V      ?git commit --no-verify
+
+# !でoriginのブランチ削除
+bind main    !      ?git push origin :%(branch)
+
+# ^ で reset --soft
+bind generic ^      ?git reset --soft HEAD^
+bind reflog  ^      ?git reset --hard HEAD@{"%(prompt Enter HEAD number: )"}
+
+# ` で状況によって色々コピー
+# commitはcにしたので、branchはBにした。先に割り当たってるのがあるっぽいので確認しないといけない
+bind tree `         @bash -c "echo -n '%(file)' | pbcopy"
+bind blob `         @bash -c "echo -n '%(text)' | pbcopy"
+bind diff `         @bash -c "echo -n '%(text)' | awk '{$1=$1};1' | pbcopy"
+bind blame `        @bash -c "cat '%(file)' | pbcopy"
+bind status `       @bash -c "echo -n '%(file)' | pbcopy"
