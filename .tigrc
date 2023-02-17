@@ -65,9 +65,6 @@ bind diff    f      @bash -c "echo -n '%(file)' | pbcopy"
 bind status  f      @bash -c "echo -n '%(file)' | pbcopy"
 bind tree    f      @bash -c "echo -n '%(file)' | pbcopy"
 
-
-
-
 # Alt-f で :toggle file-name / :toggle commit-title-refs
 bind generic <Esc>f :toggle file-name
 bind main    <Esc>f :toggle commit-title-refs
